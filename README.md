@@ -27,7 +27,7 @@ This tool automatically:
 - Recursive detection of Streamline DLL locations
 - Version-aware updates (prevents overwriting newer game-provided DLLs)
 - SHA-256 fallback comparison if version info is unavailable
-- Automatic SDK download from GitHub
+- Automatic SDK download from GitHub (https://github.com/NVIDIA-RTX/Streamline/)
 - Self-healing SDK extraction (re-download on corruption)
 - Safe deployment:
   - atomic replacement (`.tmp` → `.bak`)
