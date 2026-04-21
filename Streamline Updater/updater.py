@@ -10,15 +10,31 @@ from helpers.logger import log
 from helpers.version import get_file_version
 
 import sys
-import os
 
 
+# ----------------------------
+# UI / Mode Selection
+# ----------------------------
 def choose_mode():
-    print("1) Dry Run")
-    print("2) Deploy")
-    return input("Select: ").strip()
+    print("\n======================================")
+    print("  Streamline SDK Updater by VanStorm")
+    print("======================================\n")
+
+    print("1) Test Deployment (no files will get changed)")
+    print("2) Deployment (Streamline DLLs will be updated to the latest version)\n")
+
+    choice = input("Select an option: ").strip()
+
+    if choice not in ("1", "2"):
+        print("Invalid selection. Exiting.")
+        sys.exit(0)
+
+    return choice
 
 
+# ----------------------------
+# Helpers
+# ----------------------------
 def format_version(v):
     if not v:
         return "unknown"
@@ -85,22 +101,35 @@ def select_games(game_map):
     return selected
 
 
-def wait_if_double_clicked():
-    if getattr(sys, "frozen", False):
-        if not os.environ.get("PROMPT"):
-            input("\nPress Enter to exit...")
+# ----------------------------
+# Pause for EXE
+# ----------------------------
+def wait_if_exe():
+    if getattr(sys, "frozen", False) and "--no-pause" not in sys.argv:
+        input("\nPress Enter to exit...")
 
 
+# ----------------------------
+# Main Logic
+# ----------------------------
 def main():
     from helpers import config
 
+    # Force flag
     if "--force" in sys.argv:
         config.FORCE_UPDATE = True
         log("Force mode enabled", "WARNING")
 
+    # Mode selection
     mode = choose_mode()
     dry_run = (mode == "1")
 
+    if dry_run:
+        log("Mode: TEST DEPLOYMENT (no files will be changed)", "WARNING")
+    else:
+        log("Mode: DEPLOYMENT (files WILL be modified)", "WARNING")
+
+    # Download SDK
     version, url = get_latest_release()
     download_and_extract(version, url)
 
@@ -108,8 +137,10 @@ def main():
 
     log(f"Using working directory: {SDK_DIR.parent}", "INFO")
 
+    # Discover games
     games = get_steam_games() + get_epic_games() + get_gog_games()
 
+    # Deduplicate by path
     seen_paths = set()
     unique_games = []
 
@@ -119,6 +150,7 @@ def main():
             seen_paths.add(key)
             unique_games.append(g)
 
+    # Build game map
     game_map = []
 
     for g in unique_games:
@@ -139,8 +171,10 @@ def main():
         log("No games with Streamline DLLs detected.", "WARNING")
         return
 
+    # User selection
     selected_games = select_games(game_map)
 
+    # Deployment
     for g in selected_games:
         log(f"\nProcessing: {g['name']} ({g['launcher']})", "SUCCESS")
 
@@ -154,10 +188,13 @@ def main():
     log(f"\nFinished. Logs written to: {LOG_FILE}", "SUCCESS")
 
 
+# ----------------------------
+# Entry Point
+# ----------------------------
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         log(f"Fatal error: {e}", "ERROR")
     finally:
-        wait_if_double_clicked()
+        wait_if_exe()
