@@ -10,7 +10,7 @@ Remove-Item -Recurse -Force *.spec -ErrorAction SilentlyContinue
 
 Write-Host "=== Building EXE ==="
 
-pyinstaller --onefile "$projectRoot\updater.py" --hidden-import win32api
+pyinstaller --onefile --clean --name "Streamline-Updater" "$projectRoot\updater.py" --hidden-import win32api
 
 Write-Host "=== Preparing ZIP structure ==="
 
