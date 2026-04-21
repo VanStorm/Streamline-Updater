@@ -20,7 +20,7 @@ def get_epic_games():
                 games.append({
                     "id": f.stem,
                     "name": name,
-                    "launcher": "epic",
+                    "launcher": "Epic Games",
                     "path": path
                 })
         except:

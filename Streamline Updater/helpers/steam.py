@@ -30,6 +30,7 @@ def get_steam_libraries():
 
 def get_steam_games():
     games = []
+    seen = set()
 
     for lib in get_steam_libraries():
         manifest_dir = lib / "steamapps"
@@ -38,16 +39,21 @@ def get_steam_games():
 
         for f in manifest_dir.glob("appmanifest_*.acf"):
             data = parse_acf(f)
+
             installdir = data.get("installdir")
             name = data.get("name", installdir)
 
             if installdir:
-                path = lib / "steamapps" / "common" / installdir
-                if path.exists():
+                path = (lib / "steamapps" / "common" / installdir).resolve()
+
+                key = str(path).lower()
+                if path.exists() and key not in seen:
+                    seen.add(key)
+
                     games.append({
                         "id": f.stem,
                         "name": name,
-                        "launcher": "steam",
+                        "launcher": "Steam",
                         "path": str(path)
                     })
 
