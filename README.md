@@ -50,8 +50,7 @@ pip install requests pywin32
 
 ## Usage
 
-Run the script:
-
+Run the script directly from the Streamline-Updater.exe or the command line via:
 ```bash
 python updater.py
 ```
