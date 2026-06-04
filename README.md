@@ -11,9 +11,9 @@ Useful if you want the latest DLSS / Reflex / Frame Generation runtime across yo
 3. Compares what's installed against the SDK version.
 4. Replaces anything older, and leaves newer or matching files alone.
 
-It won't downgrade a DLL a game shipped with something newer, and every file it touches gets backed up to a `.bak` first, so you can always roll back.
+If a game ships a newer DLL than the SDK, it gets left alone. Every file it touches gets backed up to a `.bak` first, so you can always roll back.
 
-## Good to know
+## Notes
 
 - Reads the actual file version off each DLL. If a DLL has no version info, it falls back to comparing SHA-256 hashes so it doesn't reinstall identical files.
 - The SDK download is checked after extraction. If it came down corrupt or incomplete, it wipes and re-downloads once before giving up.
