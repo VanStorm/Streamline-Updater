@@ -1,13 +1,19 @@
+import json
+import re
+import time
 import requests
 import zipfile
 import shutil
 import os
 from pathlib import Path
 
-from helpers.config import SDK_DIR
+from helpers.config import SDK_DIR, GITHUB_API_LATEST, CACHE_FILE
 from helpers.logger import log
-from helpers.motw import remove_motw
+from helpers.fileutils import remove_motw
 
+
+# Cache is valid for 1 hour
+CACHE_TTL_SECONDS = 3600
 
 REQUIRED_DLLS = [
     "sl.common.dll",
@@ -24,6 +30,55 @@ REQUIRED_DLLS = [
 ]
 
 STRICT_VALIDATION = True
+
+
+def _load_cache():
+    try:
+        if CACHE_FILE.exists():
+            data = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+            if time.time() - data.get("timestamp", 0) < CACHE_TTL_SECONDS:
+                return data.get("payload")
+    except Exception:
+        pass
+    return None
+
+
+def _save_cache(payload):
+    try:
+        CACHE_FILE.write_text(
+            json.dumps({"timestamp": time.time(), "payload": payload}),
+            encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def get_latest_release():
+    cached = _load_cache()
+
+    if cached:
+        log("Using cached GitHub release info")
+        data = cached
+    else:
+        r = requests.get(GITHUB_API_LATEST, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        _save_cache(data)
+
+    tag = data["tag_name"]
+    version = tag.lstrip("v")
+
+    asset_url = None
+
+    for asset in data["assets"]:
+        if re.match(r"^streamline-sdk-v\d+\.\d+\.\d+\.zip$", asset["name"]):
+            asset_url = asset["browser_download_url"]
+            break
+
+    if not asset_url:
+        raise RuntimeError("No valid SDK asset found")
+
+    return version, asset_url
 
 
 def sdk_exists(version):
@@ -52,11 +107,13 @@ def download_and_extract(version, url):
         zip_path = SDK_DIR / f"{version}.zip"
 
         log(f"Downloading SDK {version}")
-        r = requests.get(url)
+        r = requests.get(url, stream=True, timeout=30)
         r.raise_for_status()
 
         with open(zip_path, "wb") as f:
-            f.write(r.content)
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
 
         if extract_dir.exists():
             shutil.rmtree(extract_dir, ignore_errors=True)
@@ -66,7 +123,7 @@ def download_and_extract(version, url):
         with zipfile.ZipFile(zip_path, 'r') as z:
             z.extractall(extract_dir)
 
-        # Copy DLLs
+        # flatten the bin/x64 DLLs up to the version root
         for root, _, files in os.walk(extract_dir):
             if root.endswith("bin\\x64") or root.endswith("bin/x64"):
                 for file in files:
@@ -76,7 +133,7 @@ def download_and_extract(version, url):
                         shutil.copy2(src, dst)
                         remove_motw(dst)
 
-        # Cleanup
+        # strip everything that isn't an sl.*.dll
         for item in extract_dir.iterdir():
             if item.is_file():
                 if not (item.name.lower().startswith("sl.") and item.name.lower().endswith(".dll")):
@@ -86,7 +143,6 @@ def download_and_extract(version, url):
 
         zip_path.unlink(missing_ok=True)
 
-    # Attempt 1
     attempt()
 
     if not validate_sdk(extract_dir):
@@ -94,7 +150,6 @@ def download_and_extract(version, url):
 
         shutil.rmtree(extract_dir, ignore_errors=True)
 
-        # Attempt 2
         attempt()
 
         if not validate_sdk(extract_dir):

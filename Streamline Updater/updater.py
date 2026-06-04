@@ -1,20 +1,43 @@
-from helpers.github import get_latest_release
-from helpers.sdk import download_and_extract
-from helpers.steam import get_steam_games
-from helpers.epic import get_epic_games
-from helpers.gog import get_gog_games
-from helpers.scanner import find_dll_dirs
+from helpers.sdk import get_latest_release, download_and_extract
+from helpers.launcher import discover_games
 from helpers.deploy import deploy_directory
 from helpers.config import SDK_DIR, LOG_FILE
 from helpers.logger import log
-from helpers.version import get_file_version
+from helpers.fileutils import get_file_version
 
+import os
 import sys
+from pathlib import Path
 
 
-# ----------------------------
-# UI / Mode Selection
-# ----------------------------
+def find_dll_dirs(game_path):
+    results = []
+
+    for root, dirs, files in os.walk(game_path):
+        files_lower = [f.lower() for f in files]
+
+        has_common = "sl.common.dll" in files_lower
+        has_dlss = "sl.dlss.dll" in files_lower
+
+        if has_common or has_dlss:
+            matches = [
+                f for f in files
+                if f.lower().startswith("sl.") and f.lower().endswith(".dll")
+            ]
+
+            results.append({
+                "path": root,
+                "dll_files": matches,
+                "has_common": has_common,
+                "has_dlss": has_dlss
+            })
+
+            # don't recurse past a folder that already has the DLLs
+            dirs[:] = []
+
+    return results
+
+
 def choose_mode():
     print("\n======================================")
     print("  Streamline SDK Updater by VanStorm")
@@ -32,9 +55,6 @@ def choose_mode():
     return choice
 
 
-# ----------------------------
-# Helpers
-# ----------------------------
 def format_version(v):
     if not v:
         return "unknown"
@@ -46,7 +66,7 @@ def get_game_version(dirs):
 
     for d in dirs:
         for dll in d["dll_files"]:
-            path = d["path"] + "\\" + dll
+            path = Path(d["path"]) / dll
             v = get_file_version(path)
             if v:
                 versions.append(v)
@@ -101,26 +121,18 @@ def select_games(game_map):
     return selected
 
 
-# ----------------------------
-# Pause for EXE
-# ----------------------------
 def wait_if_exe():
     if getattr(sys, "frozen", False) and "--no-pause" not in sys.argv:
         input("\nPress Enter to exit...")
 
 
-# ----------------------------
-# Main Logic
-# ----------------------------
 def main():
     from helpers import config
 
-    # Force flag
     if "--force" in sys.argv:
         config.FORCE_UPDATE = True
         log("Force mode enabled", "WARNING")
 
-    # Mode selection
     mode = choose_mode()
     dry_run = (mode == "1")
 
@@ -129,7 +141,6 @@ def main():
     else:
         log("Mode: DEPLOYMENT (files WILL be modified)", "WARNING")
 
-    # Download SDK
     version, url = get_latest_release()
     download_and_extract(version, url)
 
@@ -137,20 +148,8 @@ def main():
 
     log(f"Using working directory: {SDK_DIR.parent}", "INFO")
 
-    # Discover games
-    games = get_steam_games() + get_epic_games() + get_gog_games()
+    unique_games = discover_games()
 
-    # Deduplicate by path
-    seen_paths = set()
-    unique_games = []
-
-    for g in games:
-        key = g["path"].lower()
-        if key not in seen_paths:
-            seen_paths.add(key)
-            unique_games.append(g)
-
-    # Build game map
     game_map = []
 
     for g in unique_games:
@@ -171,10 +170,8 @@ def main():
         log("No games with Streamline DLLs detected.", "WARNING")
         return
 
-    # User selection
     selected_games = select_games(game_map)
 
-    # Deployment
     for g in selected_games:
         log(f"\nProcessing: {g['name']} ({g['launcher']})", "SUCCESS")
 
@@ -188,9 +185,6 @@ def main():
     log(f"\nFinished. Logs written to: {LOG_FILE}", "SUCCESS")
 
 
-# ----------------------------
-# Entry Point
-# ----------------------------
 if __name__ == "__main__":
     try:
         main()

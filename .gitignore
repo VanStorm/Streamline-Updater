@@ -173,6 +173,10 @@ dist/
 build/
 streamline-sdk/
 logs.txt
+build.ps1
+
+# Kiro
+.kiro/
 
 # PyInstaller output
 *.spec

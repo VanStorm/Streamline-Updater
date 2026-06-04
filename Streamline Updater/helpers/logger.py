@@ -14,10 +14,9 @@ def log(msg, level="INFO"):
     color = COLORS.get(level, COLORS["INFO"])
     line = f"[{level}] {msg}"
 
-    # Console output (colored)
     print(f"{color}{line}{RESET}")
 
-    # File output (no color)
+    # log file gets the plain text, no ANSI codes
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(line + "\n")

@@ -1,56 +1,47 @@
 # Streamline-Updater
 
-A Python utility that scans installed games (Steam, Epic Games, GOG) for NVIDIA Streamline DLLs and updates them to the latest publicly available version.
+Keeps the NVIDIA Streamline DLLs (`sl.*.dll`) in your games up to date. It scans your Steam, Epic, and GOG libraries, finds games that ship Streamline, and swaps in the newest DLLs from NVIDIA's official [Streamline SDK](https://github.com/NVIDIA-RTX/Streamline/) releases.
 
----
+Useful if you want the latest DLSS / Reflex / Frame Generation runtime across your library without manually copying DLLs into every game folder.
 
-## Overview
+## How it works
 
-This tool automatically:
+1. Grabs the latest SDK release straight from NVIDIA's GitHub.
+2. Looks through your installed games for existing Streamline DLLs.
+3. Compares what's installed against the SDK version.
+4. Replaces anything older, and leaves newer or matching files alone.
 
-- Detects installed games across supported launchers
-- Searches for Streamline DLLs (`sl.*.dll`)
-- Compares installed versions against the latest SDK release
-- Updates outdated DLLs while:
-  - avoiding downgrades
-  - backing up existing files
-  - preserving compatibility
+It won't downgrade a DLL a game shipped with something newer, and every file it touches gets backed up to a `.bak` first, so you can always roll back.
 
----
+## Good to know
 
-## Features
-
-- Supports:
-  - Steam
-  - Epic Games
-  - GOG
-- Recursive detection of Streamline DLL locations
-- Version-aware updates (prevents overwriting newer game-provided DLLs)
-- SHA-256 fallback comparison if version info is unavailable
-- Automatic SDK download from GitHub (https://github.com/NVIDIA-RTX/Streamline/)
-- Self-healing SDK extraction (re-download on corruption)
-- Safe deployment:
-  - atomic replacement (`.tmp` → `.bak`)
-- Dry-run mode for previewing changes
-- Optional `--force` override
-
----
+- Reads the actual file version off each DLL. If a DLL has no version info, it falls back to comparing SHA-256 hashes so it doesn't reinstall identical files.
+- The SDK download is checked after extraction. If it came down corrupt or incomplete, it wipes and re-downloads once before giving up.
+- Run it in test mode first (option 1 in the menu) to see exactly what would change without touching a single file.
+- Locked files (game running, DLL in use) are skipped with a warning instead of crashing the run.
 
 ## Requirements
 
-- Python 3.x
 - Windows
+- Python 3.x
 
-### Python dependencies
+Install the dependencies with:
 
 ```bash
-pip install requests pywin32
+pip install -r requirements.txt
 ```
----
 
-## Usage
+## Running it
 
-Run the script directly from the Streamline-Updater.exe or the command line via:
+Grab `Streamline-Updater.exe` from the release and double-click it, or run from source:
+
 ```bash
 python updater.py
 ```
+
+Pick test mode or live mode when prompted, choose which games to update, and confirm.
+
+### Flags
+
+- `--force` updates every matched DLL regardless of version, including downgrades. Use it when you want to pin everything to the current SDK.
+- `--no-pause` skips the "Press Enter to exit" prompt on the EXE, handy for scripting.
