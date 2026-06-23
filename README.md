@@ -23,7 +23,7 @@ If a game ships a newer DLL than the SDK, it gets left alone. Every file it touc
 ## Requirements
 
 - Windows
-- Python 3.x
+- Python 3.9+
 
 Install the dependencies with:
 
@@ -33,9 +33,10 @@ pip install -r requirements.txt
 
 ## Running it
 
-Grab `Streamline-Updater.exe` from the release and double-click it, or run from source:
+Grab `Streamline-Updater.exe` from the [latest release](https://github.com/VanStorm/Streamline-Updater/releases) and double-click it, or run from source:
 
 ```bash
+cd "Streamline Updater"
 python updater.py
 ```
 
@@ -43,5 +44,18 @@ Pick test mode or live mode when prompted, choose which games to update, and con
 
 ### Flags
 
-- `--force` updates every matched DLL regardless of version, including downgrades. Use it when you want to pin everything to the current SDK.
-- `--no-pause` skips the "Press Enter to exit" prompt on the EXE, handy for scripting.
+| Flag | What it does |
+|------|--------------|
+| `--force` | Updates every matched DLL regardless of version, including downgrades. Use it when you want to pin everything to the current SDK. |
+| `--no-pause` | Skips the "Press Enter to exit" prompt on the EXE. Handy for scripting. |
+| `--help` | Shows usage information. |
+
+## Building
+
+Run from the repo root:
+
+```powershell
+.\build.ps1
+```
+
+Produces `dist/Streamline-Updater.exe` (standalone) and `dist/Streamline-Updater.zip` (source for Python users). Requires `pyinstaller` — see `requirements.txt`.
