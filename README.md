@@ -37,7 +37,7 @@ Grab `Streamline-Updater.exe` from the [latest release](https://github.com/VanSt
 
 ```bash
 cd "Streamline Updater"
-python updater.py
+python streamline_updater.py
 ```
 
 Pick test mode or live mode when prompted, choose which games to update, and confirm.

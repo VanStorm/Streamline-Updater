@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $exeName    = "Streamline-Updater"
 $exePath    = "dist\$exeName.exe"
-$scriptPath = "Streamline Updater\updater.py"
+$scriptPath = "Streamline Updater\streamline_updater.py"
 
 # Verify PyInstaller is available before doing anything destructive
 if (-not (Get-Command pyinstaller -ErrorAction SilentlyContinue)) {
