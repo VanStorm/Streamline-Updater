@@ -4,6 +4,10 @@ Keeps the NVIDIA Streamline DLLs (`sl.*.dll`) in your games up to date. It scans
 
 Useful if you want the latest DLSS / Reflex / Frame Generation runtime across your library without manually copying DLLs into every game folder.
 
+## Note
+
+If you want more features like DLSS updates, ReShade one click installations and many other features, just use [RHI](https://github.com/RankFTW/RHI/) instead. It's a great tool and can do what my tool can do and a lot more.
+
 ## How it works
 
 1. Grabs the latest SDK release straight from NVIDIA's GitHub.
